@@ -1,6 +1,10 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
+import { AuthModule } from './auth/auth.module';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import { UserModule } from './user/user.module';
 
 @Module({
   imports: [
@@ -25,11 +29,13 @@ import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
         database: configService.getOrThrow<string>('DB_DATABASE'),
         // Carga automáticamente las entidades registradas con forFeature()
         autoLoadEntities: true,
-        synchronize: true, // ⚠️ Solo en desarrollo
+        synchronize: configService.get<string>('NODE_ENV') === 'development',
       }),
     }),
-
-    
+    UserModule,
+    AuthModule,
   ],
+  controllers: [AppController],
+  providers: [AppService],
 })
 export class AppModule {}
