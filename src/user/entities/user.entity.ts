@@ -4,8 +4,14 @@ import {
   PrimaryGeneratedColumn,
   CreateDateColumn,
   UpdateDateColumn,
+  ManyToOne,
+  OneToMany,
+  JoinColumn,
 } from 'typeorm';
 import { Exclude } from 'class-transformer';
+import { Role } from '../../role/entities/role.entity';
+import { TipoDocumento } from '../../tipo-documento/entities/tipo-documento.entity';
+import { Diseno } from '../../diseno/entities/diseno.entity';
 
 // Decorador @Entity define que esta clase es una entidad de base de datos
 @Entity('users')
@@ -19,8 +25,9 @@ export class User {
   email: string;
 
   // El tipo de documento puede repetirse; el número identifica al usuario
-  @Column({ nullable: false })
-  tipo_documento: string;
+  @ManyToOne(() => TipoDocumento, (tipoDocumento) => tipoDocumento.usuarios, { nullable: false })
+  @JoinColumn({ name: 'id_tipo_documento' })
+  tipoDocumento: TipoDocumento;
 
   @Exclude()
   @Column({ nullable: false, select: false })
@@ -50,13 +57,17 @@ export class User {
   @Column({ default: true })
   isActive: boolean;
 
-  // Rol del usuario (por defecto 'user')
-  @Column({ default: 'user' })
-  role: string;
+  // Rol del usuario, relacionado con la tabla rol
+  @ManyToOne(() => Role, (role) => role.usuarios, { nullable: false })
+  @JoinColumn({ name: 'id_role' })
+  role: Role;
 
   // Fecha de creación automática
   @CreateDateColumn()
   createdAt: Date;
+
+  @OneToMany(() => Diseno, (diseno) => diseno.cliente)
+  disenos: Diseno[];
 
   // Fecha de actualización automática
   @UpdateDateColumn()

@@ -18,9 +18,10 @@ export class CreateUserDto {
   @IsNotEmpty({ message: 'La contraseña es obligatoria' })
   password: string;
 
-  @IsString({ message: 'El tipo de documento debe ser una cadena de texto' })
-  @IsNotEmpty({ message: 'El tipo de documento es obligatorio' })
-  tipo_documento: string;
+  @Type(() => Number)
+  @IsInt({ message: 'El ID del tipo de documento debe ser un número entero' })
+  @Min(1)
+  id_tipo_documento: number;
 
   @Type(() => Number)
   @IsInt({ message: 'El número de documento debe ser un número entero' })

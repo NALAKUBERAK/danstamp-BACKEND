@@ -5,6 +5,10 @@ import { AuthModule } from './auth/auth.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UserModule } from './user/user.module';
+import { RoleModule } from './role/role.module';
+import { TipoDocumentoModule } from './tipo-documento/tipo-documento.module';
+import { CloudinaryModule } from './cloudinary/cloudinary.module';
+import { DisenoModule } from './diseno/diseno.module';
 
 @Module({
   imports: [
@@ -29,10 +33,16 @@ import { UserModule } from './user/user.module';
         database: configService.getOrThrow<string>('DB_DATABASE'),
         // Carga automáticamente las entidades registradas con forFeature()
         autoLoadEntities: true,
-        synchronize: configService.get<string>('NODE_ENV') === 'development',
+        // Las tablas ya están creadas y alineadas en el proyecto.
+        // Mantener synchronize desactivado evita modificaciones automáticas destructivas.
+        synchronize: false,
       }),
     }),
     UserModule,
+    RoleModule,
+    TipoDocumentoModule,
+    CloudinaryModule,
+    DisenoModule,
     AuthModule,
   ],
   controllers: [AppController],

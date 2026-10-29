@@ -7,6 +7,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Not, Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { User } from './entities/user.entity';
+import { RoleName } from '../role/role.enum';
+import { RoleService } from '../role/role.service';
+import { TipoDocumentoService } from '../tipo-documento/tipo-documento.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
@@ -19,6 +22,8 @@ export class UserService {
     // Inyección del repositorio de User
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    private readonly roleService: RoleService,
+    private readonly tipoDocumentoService: TipoDocumentoService,
   ) {}
 
   /**
@@ -47,6 +52,13 @@ export class UserService {
       throw new ConflictException('El teléfono ya está registrado');
     }
 
+    const tipoDocumento = await this.tipoDocumentoService.findOne(createUserDto.id_tipo_documento);
+    if (!tipoDocumento) throw new NotFoundException('Tipo de documento no encontrado');
+
+    // Todo usuario creado por este servicio comienza con el rol cliente.
+    const role = await this.roleService.findByName(RoleName.CLIENTE);
+    if (!role) throw new NotFoundException('El rol cliente no existe. Debe inicializarse la tabla de roles.');
+
     // Encriptar la contraseña
     const hashedPassword: string = await bcrypt.hash(
       createUserDto.password,
@@ -54,9 +66,13 @@ export class UserService {
     );
 
     // Crear nueva instancia de usuario
+    const userData = { ...createUserDto } as Partial<CreateUserDto>;
+    delete userData.id_tipo_documento;
     const user: User = this.userRepository.create({
-      ...createUserDto,
+      ...userData,
       password: hashedPassword,
+      tipoDocumento,
+      role,
     });
 
     // Guardar en la base de datos
@@ -68,7 +84,7 @@ export class UserService {
    * No incluye las contraseñas (select: false en la entidad)
    */
   async findAll(): Promise<User[]> {
-    return await this.userRepository.find();
+    return await this.userRepository.find({ relations: { tipoDocumento: true, role: true } });
   }
 
   /**
@@ -76,7 +92,7 @@ export class UserService {
    * Lanza 404 si no existe (para uso en controladores)
    */
   async findOne(id_usuario: number): Promise<User> {
-    const user: User | null = await this.userRepository.findOneBy({ id_usuario });
+    const user: User | null = await this.userRepository.findOne({ where: { id_usuario }, relations: { tipoDocumento: true, role: true } });
 
     if (!user) {
       throw new NotFoundException(`Usuario con ID ${id_usuario} no encontrado`);
@@ -90,7 +106,7 @@ export class UserService {
    * Devuelve null si no existe (lo usa la estrategia JWT)
    */
   async findById(id_usuario: number): Promise<User | null> {
-    return await this.userRepository.findOneBy({ id_usuario });
+    return await this.userRepository.findOne({ where: { id_usuario }, relations: { tipoDocumento: true, role: true } });
   }
 
   /**
@@ -105,15 +121,16 @@ export class UserService {
         id_usuario: true,
         email: true,
         password: true,
-        tipo_documento: true,
         numero_documento: true,
         telefono: true,
         direccion: true,
         nombres: true,
         apellidos: true,
-        role: true,
         isActive: true,
+        tipoDocumento: { id_tipo_documento: true, nombre: true },
+        role: { id_role: true, nombre: true, descripcion: true },
       },
+      relations: { tipoDocumento: true, role: true },
     });
   }
 
@@ -155,6 +172,20 @@ export class UserService {
 
     // Copia de los cambios para no modificar el DTO recibido
     const changes: UpdateUserDto = { ...updateUserDto };
+
+    if (changes.id_tipo_documento !== undefined) {
+      const tipoDocumento = await this.tipoDocumentoService.findOne(changes.id_tipo_documento);
+      if (!tipoDocumento) throw new NotFoundException('Tipo de documento no encontrado');
+      user.tipoDocumento = tipoDocumento;
+      delete changes.id_tipo_documento;
+    }
+
+    if (changes.id_role !== undefined) {
+      const role = await this.roleService.findOne(changes.id_role);
+      if (!role) throw new NotFoundException('Rol no encontrado');
+      user.role = role;
+      delete changes.id_role;
+    }
 
     // Si se actualiza la contraseña, encriptarla
     if (changes.password) {

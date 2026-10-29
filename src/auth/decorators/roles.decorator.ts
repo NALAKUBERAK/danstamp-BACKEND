@@ -5,7 +5,7 @@ export const ROLES_KEY = 'roles';
 
 /**
  * Decorador para especificar roles requeridos
- * Uso: @Roles('admin', 'moderator')
+ * Uso: @Roles('admin', 'empleado')
  */
 export const Roles = (...roles: string[]): CustomDecorator<string> =>
   SetMetadata(ROLES_KEY, roles); 

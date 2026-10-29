@@ -89,7 +89,7 @@ export class AuthService {
     const payload: JwtPayload = {
       sub: user.id_usuario,
       email: user.email,
-      role: user.role,
+      role: user.role.nombre,
     };
 
     // Firmar y retornar el token
@@ -107,7 +107,7 @@ export class AuthService {
         id: user.id_usuario,
         email: user.email,
         fullName: user.nombres + ' ' + user.apellidos,
-        role: user.role,
+        role: user.role.nombre,
       },
       token,
     };
