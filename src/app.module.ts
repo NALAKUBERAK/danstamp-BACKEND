@@ -9,6 +9,14 @@ import { RoleModule } from './role/role.module';
 import { TipoDocumentoModule } from './tipo-documento/tipo-documento.module';
 import { CloudinaryModule } from './cloudinary/cloudinary.module';
 import { DisenoModule } from './diseno/diseno.module';
+import { PedidoModule } from './pedido/pedido.module';
+import { HistorialPedidoModule } from './historial-pedido/historial-pedido.module';
+import { PagoModule } from './pago/pago.module';
+import { DetallePedidoModule } from './detalle-pedido/detalle-pedido.module';
+import { TipoTrabajoModule } from './tipo-trabajo/tipo-trabajo.module';
+import { ProductoModule } from './producto/producto.module';
+import { CategoriaModule } from './categoria/categoria.module';
+import { MovimientoInventarioModule } from './movimiento-inventario/movimiento-inventario.module';
 
 @Module({
   imports: [
@@ -43,6 +51,14 @@ import { DisenoModule } from './diseno/diseno.module';
     TipoDocumentoModule,
     CloudinaryModule,
     DisenoModule,
+    PedidoModule,
+    HistorialPedidoModule,
+    PagoModule,
+    DetallePedidoModule,
+    TipoTrabajoModule,
+    ProductoModule,
+    CategoriaModule,
+    MovimientoInventarioModule,
     AuthModule,
   ],
   controllers: [AppController],

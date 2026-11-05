@@ -12,6 +12,10 @@ import { Exclude } from 'class-transformer';
 import { Role } from '../../role/entities/role.entity';
 import { TipoDocumento } from '../../tipo-documento/entities/tipo-documento.entity';
 import { Diseno } from '../../diseno/entities/diseno.entity';
+import { Pedido } from '../../pedido/entities/pedido.entity';
+import { HistorialPedido } from '../../historial-pedido/entities/historial-pedido.entity';
+import { Pago } from '../../pago/entities/pago.entity';
+import { MovimientoInventario } from '../../movimiento-inventario/entities/movimiento-inventario.entity';
 
 // Decorador @Entity define que esta clase es una entidad de base de datos
 @Entity('users')
@@ -68,6 +72,21 @@ export class User {
 
   @OneToMany(() => Diseno, (diseno) => diseno.cliente)
   disenos: Diseno[];
+
+  @OneToMany(() => Pedido, (pedido) => pedido.cliente)
+  pedidosCliente: Pedido[];
+
+  @OneToMany(() => Pedido, (pedido) => pedido.operario)
+  pedidosOperario: Pedido[];
+
+  @OneToMany(() => HistorialPedido, (historial) => historial.usuario)
+  historialPedidos: HistorialPedido[];
+
+  @OneToMany(() => Pago, (pago) => pago.operarioValida)
+  pagosValidados: Pago[];
+
+  @OneToMany(() => MovimientoInventario, (movimiento) => movimiento.usuario)
+  movimientosInventario: MovimientoInventario[];
 
   // Fecha de actualización automática
   @UpdateDateColumn()

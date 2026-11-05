@@ -1,7 +1,9 @@
 import {
+  BadRequestException,
   Injectable,
   ConflictException,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Not, Repository } from 'typeorm';
@@ -12,6 +14,8 @@ import { RoleService } from '../role/role.service';
 import { TipoDocumentoService } from '../tipo-documento/tipo-documento.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Injectable()
 export class UserService {
@@ -196,6 +200,55 @@ export class UserService {
     this.userRepository.merge(user, changes);
 
     return await this.userRepository.save(user);
+  }
+
+  async updateProfile(id: number, dto: UpdateProfileDto): Promise<User> {
+    const user = await this.findOne(id);
+
+    if (dto.email !== undefined && dto.email !== user.email) {
+      const taken = await this.userRepository.existsBy({ email: dto.email });
+      if (taken) throw new ConflictException('El email ya está registrado');
+    }
+
+    if (dto.numero_documento !== undefined) {
+      const taken = await this.userRepository.existsBy({ numero_documento: dto.numero_documento, id_usuario: Not(id) });
+      if (taken) throw new ConflictException('El número de documento ya está registrado');
+    }
+
+    if (dto.telefono !== undefined) {
+      const taken = await this.userRepository.existsBy({ telefono: dto.telefono, id_usuario: Not(id) });
+      if (taken) throw new ConflictException('El teléfono ya está registrado');
+    }
+
+    const changes = { ...dto };
+    if (changes.id_tipo_documento !== undefined) {
+      user.tipoDocumento = await this.tipoDocumentoService.findOne(changes.id_tipo_documento);
+      delete changes.id_tipo_documento;
+    }
+
+    this.userRepository.merge(user, changes);
+    return this.userRepository.save(user);
+  }
+
+  async changePassword(id: number, dto: ChangePasswordDto): Promise<void> {
+    const user = await this.userRepository.findOne({
+      where: { id_usuario: id },
+      select: { id_usuario: true, password: true },
+    });
+    if (!user) throw new NotFoundException(`Usuario con ID ${id} no encontrado`);
+
+    const matches = await bcrypt.compare(dto.currentPassword, user.password);
+    if (!matches) throw new UnauthorizedException('La contraseña actual no es correcta');
+    if (dto.currentPassword === dto.newPassword) throw new BadRequestException('La nueva contraseña debe ser diferente');
+
+    user.password = await bcrypt.hash(dto.newPassword, this.saltRounds);
+    await this.userRepository.save(user);
+  }
+
+  async deactivateAccount(id: number): Promise<void> {
+    const user = await this.findOne(id);
+    user.isActive = false;
+    await this.userRepository.save(user);
   }
 
   /**

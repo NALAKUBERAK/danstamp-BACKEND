@@ -1,7 +1,7 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Diseno } from './entities/diseno.entity';
+import { Diseno, DisenoEstado } from './entities/diseno.entity';
 import { CreateDisenoDto } from './dto/create-diseno.dto';
 import { UpdateDisenoDto } from './dto/update-diseno.dto';
 import { UserService } from '../user/user.service';
@@ -47,6 +47,7 @@ export class DisenoService {
       formato: formato.slice(0, 10),
       descripcion: dto.descripcion ?? null,
       observacion: dto.observacion ?? null,
+      estado: dto.estado ?? DisenoEstado.ACTIVO,
       archivo_url: upload.secure_url,
       archivo_public_id: upload.public_id,
       cliente,

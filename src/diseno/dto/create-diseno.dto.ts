@@ -1,4 +1,5 @@
-import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import { DisenoEstado } from '../entities/diseno.entity';
 
 export class CreateDisenoDto {
   @IsString()
@@ -19,4 +20,8 @@ export class CreateDisenoDto {
   @IsString()
   @MaxLength(255)
   observacion?: string;
+
+  @IsOptional()
+  @IsEnum(DisenoEstado)
+  estado?: DisenoEstado;
 }

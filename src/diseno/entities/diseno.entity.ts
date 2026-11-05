@@ -4,9 +4,16 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { User } from '../../user/entities/user.entity';
+import { DetallePedido } from '../../detalle-pedido/entities/detalle-pedido.entity';
+
+export enum DisenoEstado {
+  ACTIVO = 'activo',
+  INACTIVO = 'inactivo',
+}
 
 @Entity('diseno')
 export class Diseno {
@@ -35,6 +42,12 @@ export class Diseno {
   @Column({ type: 'varchar', length: 255, nullable: true })
   observacion: string | null;
 
+  @Column({ type: 'enum', enum: DisenoEstado, default: DisenoEstado.ACTIVO })
+  estado: DisenoEstado;
+
   @CreateDateColumn({ type: 'datetime' })
   fecha_carga: Date;
+
+  @OneToMany(() => DetallePedido, (detalle) => detalle.diseno)
+  detallesPedido: DetallePedido[];
 }
