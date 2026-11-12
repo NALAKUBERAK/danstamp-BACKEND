@@ -8,7 +8,9 @@ import {
   HttpStatus,
   Patch,
   Delete,
+  Req,
 } from '@nestjs/common';
+import type { Request } from 'express';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
@@ -19,6 +21,8 @@ import { User } from '../user/entities/user.entity';
 import { UserService } from '../user/user.service';
 import { UpdateProfileDto } from '../user/dto/update-profile.dto';
 import { ChangePasswordDto } from '../user/dto/change-password.dto';
+import { RequestPasswordResetDto } from './dto/request-password-reset.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -32,8 +36,11 @@ export class AuthController {
    * Registrar un nuevo usuario (responde 201 Created)
    */
   @Post('register')
-  register(@Body() registerDto: RegisterDto): Promise<AuthResponse> {
-    return this.authService.register(registerDto);
+  register(
+    @Body() registerDto: RegisterDto,
+    @Req() req: Request,
+  ): Promise<AuthResponse> {
+    return this.authService.register(registerDto, req.ip ?? 'unknown');
   }
 
   /**
@@ -42,8 +49,23 @@ export class AuthController {
    */
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  login(@Body() loginDto: LoginDto): Promise<AuthResponse> {
-    return this.authService.login(loginDto);
+  login(@Body() loginDto: LoginDto, @Req() req: Request): Promise<AuthResponse> {
+    return this.authService.login(loginDto, req.ip ?? 'unknown');
+  }
+
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  requestPasswordReset(
+    @Body() dto: RequestPasswordResetDto,
+    @Req() req: Request,
+  ): Promise<{ message: string }> {
+    return this.authService.requestPasswordReset(dto.email, req.ip ?? 'unknown');
+  }
+
+  @Post('reset-password')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  resetPassword(@Body() dto: ResetPasswordDto): Promise<void> {
+    return this.authService.resetPassword(dto);
   }
 
   /**

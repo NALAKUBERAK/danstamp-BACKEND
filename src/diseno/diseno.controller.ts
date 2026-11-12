@@ -33,9 +33,14 @@ export class DisenoController {
   @Post()
   @Roles('cliente')
   @UseInterceptors(FileInterceptor('archivo', {
-    limits: { fileSize: 10 * 1024 * 1024 },
+    limits: { fileSize: 5 * 1024 * 1024 },
     fileFilter: (_request, file, callback) => {
-      if (!file.mimetype.startsWith('image/')) return callback(new BadRequestException('Solo se permiten archivos de imagen'), false);
+      if (
+        !['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype) ||
+        /\.svg$/i.test(file.originalname)
+      ) {
+        return callback(new BadRequestException('Solo se permiten imágenes JPG, PNG o WEBP'), false);
+      }
       callback(null, true);
     },
   }))
@@ -59,9 +64,14 @@ export class DisenoController {
 
   @Patch(':id')
   @UseInterceptors(FileInterceptor('archivo', {
-    limits: { fileSize: 10 * 1024 * 1024 },
+    limits: { fileSize: 5 * 1024 * 1024 },
     fileFilter: (_request, file, callback) => {
-      if (!file.mimetype.startsWith('image/')) return callback(new BadRequestException('Solo se permiten archivos de imagen'), false);
+      if (
+        !['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype) ||
+        /\.svg$/i.test(file.originalname)
+      ) {
+        return callback(new BadRequestException('Solo se permiten imágenes JPG, PNG o WEBP'), false);
+      }
       callback(null, true);
     },
   }))

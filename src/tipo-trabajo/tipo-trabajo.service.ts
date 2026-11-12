@@ -13,11 +13,15 @@ export class TipoTrabajoService {
   ) {}
 
   findAll(): Promise<TipoTrabajo[]> {
+    return this.repository.find({ where: { estado: 'activo' }, order: { nombre: 'ASC' } });
+  }
+
+  findAllForAdmin(): Promise<TipoTrabajo[]> {
     return this.repository.find({ order: { nombre: 'ASC' } });
   }
 
   async findOne(id_tipo_trabajo: number): Promise<TipoTrabajo> {
-    const tipoTrabajo = await this.repository.findOne({ where: { id_tipo_trabajo } });
+    const tipoTrabajo = await this.repository.findOne({ where: { id_tipo_trabajo, estado: 'activo' } });
     if (!tipoTrabajo) {
       throw new NotFoundException(`Tipo de trabajo con ID ${id_tipo_trabajo} no encontrado`);
     }
@@ -39,7 +43,7 @@ export class TipoTrabajoService {
   }
 
   async update(id_tipo_trabajo: number, dto: UpdateTipoTrabajoDto): Promise<TipoTrabajo> {
-    const tipoTrabajo = await this.findOne(id_tipo_trabajo);
+    const tipoTrabajo = await this.findOneForAdmin(id_tipo_trabajo);
 
     if (dto.nombre !== undefined && dto.nombre !== tipoTrabajo.nombre) {
       const exists = await this.repository.existsBy({ nombre: dto.nombre });
@@ -56,7 +60,15 @@ export class TipoTrabajoService {
   }
 
   async remove(id_tipo_trabajo: number): Promise<void> {
-    const tipoTrabajo = await this.findOne(id_tipo_trabajo);
+    const tipoTrabajo = await this.findOneForAdmin(id_tipo_trabajo);
     await this.repository.remove(tipoTrabajo);
+  }
+
+  private async findOneForAdmin(id_tipo_trabajo: number): Promise<TipoTrabajo> {
+    const tipoTrabajo = await this.repository.findOne({ where: { id_tipo_trabajo } });
+    if (!tipoTrabajo) {
+      throw new NotFoundException(`Tipo de trabajo con ID ${id_tipo_trabajo} no encontrado`);
+    }
+    return tipoTrabajo;
   }
 }

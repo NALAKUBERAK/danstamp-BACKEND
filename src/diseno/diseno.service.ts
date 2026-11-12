@@ -7,6 +7,7 @@ import { UpdateDisenoDto } from './dto/update-diseno.dto';
 import { UserService } from '../user/user.service';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { User } from '../user/entities/user.entity';
+import { validateImageUpload } from '../common/validate-image-upload';
 
 @Injectable()
 export class DisenoService {
@@ -36,11 +37,10 @@ export class DisenoService {
   }
 
   async create(dto: CreateDisenoDto, file: Express.Multer.File, userId: number): Promise<Diseno> {
-    if (!file) throw new BadRequestException('Debe enviar una imagen en el campo archivo');
+    const formato = validateImageUpload(file);
 
     const cliente = await this.userService.findOne(userId);
     const upload = await this.cloudinaryService.uploadBuffer(file.buffer, 'image', undefined, 'danstamp/disenos');
-    const formato = dto.formato ?? upload.format ?? file.originalname.split('.').pop()?.toLowerCase() ?? 'jpg';
 
     const diseno = this.repository.create({
       nombre: dto.nombre,
@@ -64,22 +64,25 @@ export class DisenoService {
     }
 
     if (file) {
+      const formato = validateImageUpload(file);
       const upload = await this.cloudinaryService.uploadBuffer(file.buffer, 'image', undefined, 'danstamp/disenos');
       const oldPublicId = diseno.archivo_public_id;
 
       diseno.archivo_url = upload.secure_url;
       diseno.archivo_public_id = upload.public_id;
-      diseno.formato = dto.formato ?? upload.format ?? file.originalname.split('.').pop()?.toLowerCase() ?? diseno.formato;
+      diseno.formato = formato;
 
       if (oldPublicId) await this.cloudinaryService.delete(oldPublicId, 'image');
     } else if (dto.formato !== undefined) {
-      diseno.formato = dto.formato.slice(0, 10);
+      throw new BadRequestException('El formato solo se puede cambiar al cargar un archivo');
     }
 
-    delete dto.formato;
-    this.repository.merge(diseno, dto);
+    const { formato: _formato, ...changes } = dto;
+    this.repository.merge(diseno, changes);
     return this.repository.save(diseno);
   }
+
+
 
   async remove(id_diseno: number, user: User): Promise<void> {
     const diseno = await this.findOne(id_diseno);

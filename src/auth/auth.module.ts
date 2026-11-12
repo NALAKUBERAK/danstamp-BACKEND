@@ -2,15 +2,20 @@ import { Module } from '@nestjs/common';
 import { JwtModule, JwtModuleOptions } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { ConfigService } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { UserModule } from '../user/user.module';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { PasswordResetToken } from './entities/password-reset-token.entity';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
     // Importar UserModule para acceder a UserService
     UserModule,
+    TypeOrmModule.forFeature([PasswordResetToken]),
+    NotificationsModule,
 
     // Configurar Passport con 'jwt' como estrategia por defecto
     PassportModule.register({ defaultStrategy: 'jwt' }),

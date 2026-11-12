@@ -19,6 +19,8 @@ export enum PedidoEstado {
   TERMINADO = 'terminado',
   ENTREGADO = 'entregado',
   CANCELADO = 'cancelado',
+  COTIZACION = 'cotizacion',
+  COTIZACION_ENVIADA = 'cotizacion_enviada',
 }
 
 @Entity('pedido')

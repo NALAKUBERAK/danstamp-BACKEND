@@ -17,6 +17,7 @@ import { TipoTrabajoModule } from './tipo-trabajo/tipo-trabajo.module';
 import { ProductoModule } from './producto/producto.module';
 import { CategoriaModule } from './categoria/categoria.module';
 import { MovimientoInventarioModule } from './movimiento-inventario/movimiento-inventario.module';
+import { ReportesModule } from './reportes/reportes.module';
 
 @Module({
   imports: [
@@ -59,6 +60,7 @@ import { MovimientoInventarioModule } from './movimiento-inventario/movimiento-i
     ProductoModule,
     CategoriaModule,
     MovimientoInventarioModule,
+    ReportesModule,
     AuthModule,
   ],
   controllers: [AppController],

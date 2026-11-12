@@ -19,13 +19,19 @@ export class MovimientoInventarioController {
   }
 
   @Get()
-  @Roles('admin', 'empleado', 'cliente')
+  @Roles('admin', 'empleado')
   findAll() {
     return this.service.findAll();
   }
 
+  @Get('alertas/stock-bajo')
+  @Roles('admin', 'empleado')
+  findLowStock() {
+    return this.service.findLowStock();
+  }
+
   @Get(':id')
-  @Roles('admin', 'empleado', 'cliente')
+  @Roles('admin', 'empleado')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.service.findOne(id);
   }

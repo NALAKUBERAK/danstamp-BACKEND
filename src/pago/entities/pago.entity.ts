@@ -13,6 +13,16 @@ export enum PagoMetodo {
   EFECTIVO = 'efectivo',
   TRANSFERENCIA = 'transferencia',
   TARJETA = 'tarjeta',
+  NEQUI = 'nequi',
+  DAVIPLATA = 'daviplata',
+  BRE_B = 'bre-b',
+  BANCOLOMBIA = 'bancolombia',
+}
+
+export enum PagoEstado {
+  PENDIENTE = 'pendiente',
+  VALIDADO = 'validado',
+  RECHAZADO = 'rechazado',
 }
 
 @Entity('pago')
@@ -26,6 +36,9 @@ export class Pago {
 
   @Column({ type: 'enum', enum: PagoMetodo })
   metodo: PagoMetodo;
+
+  @Column({ type: 'enum', enum: PagoEstado, default: PagoEstado.PENDIENTE })
+  estado: PagoEstado;
 
   @Column({ type: 'decimal', precision: 12, scale: 2 })
   monto: string;

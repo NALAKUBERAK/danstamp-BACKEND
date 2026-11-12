@@ -6,16 +6,20 @@ import {
   IsNumberString,
   IsOptional,
   IsString,
+  Matches,
+  Min,
   MaxLength,
 } from 'class-validator';
 import { PedidoEstado } from '../entities/pedido.entity';
 
 export class CreatePedidoDto {
   @IsOptional()
+  @Min(1)
   @IsInt()
   id_cliente?: number;
 
   @IsOptional()
+  @Min(1)
   @IsInt()
   id_operario?: number;
 
@@ -30,14 +34,17 @@ export class CreatePedidoDto {
 
   @IsOptional()
   @IsNumberString()
+  @Matches(/^\d{1,10}(\.\d{1,2})?$/)
   subtotal_productos?: string;
 
   @IsOptional()
   @IsNumberString()
+  @Matches(/^\d{1,10}(\.\d{1,2})?$/)
   total_trabajos?: string;
 
   @IsOptional()
   @IsNumberString()
+  @Matches(/^\d{1,10}(\.\d{1,2})?$/)
   total?: string;
 
   @IsOptional()

@@ -1,7 +1,9 @@
-import { IsBoolean, IsInt, IsNotEmpty, IsNumberString, IsOptional, IsString, IsUrl, MaxLength, Min } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import { IsBoolean, IsInt, IsNotEmpty, IsNumberString, IsOptional, IsString, IsUrl, Matches, MaxLength, Min } from 'class-validator';
 
 export class CreateProductoDto {
   @IsOptional()
+  @Type(() => Number)
   @IsInt()
   id_categoria?: number;
 
@@ -36,14 +38,17 @@ export class CreateProductoDto {
 
   @IsOptional()
   @IsNumberString()
+  @Matches(/^\d{1,10}(\.\d{1,2})?$/)
   precio_base?: string;
 
   @IsOptional()
+  @Type(() => Number)
   @IsInt()
   @Min(0)
   stock?: number;
 
   @IsOptional()
+  @Type(() => Number)
   @IsInt()
   @Min(0)
   stock_minimo?: number;
@@ -54,6 +59,11 @@ export class CreateProductoDto {
   imagen_url?: string;
 
   @IsOptional()
+  @Transform(({ value }) => {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return value;
+  })
   @IsBoolean()
   estado?: boolean;
 }

@@ -19,6 +19,9 @@ import { User } from '../user/entities/user.entity';
 import { PedidoService } from './pedido.service';
 import { CreatePedidoDto } from './dto/create-pedido.dto';
 import { UpdatePedidoDto } from './dto/update-pedido.dto';
+import { CheckoutDto } from './dto/checkout.dto';
+import { RequestQuoteDto } from './dto/request-quote.dto';
+import { SendQuoteDto } from './dto/send-quote.dto';
 
 @Controller('pedidos')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -27,8 +30,43 @@ export class PedidoController {
   constructor(private readonly service: PedidoService) {}
 
   @Post()
+  @Roles('admin', 'empleado')
   create(@Body() dto: CreatePedidoDto, @Req() request: { user: User }) {
     return this.service.create(dto, request.user);
+  }
+
+  @Post('checkout')
+  @Roles('cliente')
+  checkout(@Body() dto: CheckoutDto, @Req() request: { user: User }) {
+    return this.service.checkout(dto, request.user);
+  }
+
+  @Post('cotizaciones')
+  @Roles('cliente')
+  requestQuote(@Body() dto: RequestQuoteDto, @Req() request: { user: User }) {
+    return this.service.requestQuote(dto, request.user);
+  }
+
+  @Patch(':id/enviar-cotizacion')
+  @Roles('admin', 'empleado')
+  sendQuote(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: SendQuoteDto,
+    @Req() request: { user: User },
+  ) {
+    return this.service.sendQuote(id, dto, request.user);
+  }
+
+  @Post(':id/aceptar-cotizacion')
+  @Roles('cliente')
+  acceptQuote(@Param('id', ParseIntPipe) id: number, @Req() request: { user: User }) {
+    return this.service.respondToQuote(id, request.user, true);
+  }
+
+  @Post(':id/rechazar-cotizacion')
+  @Roles('cliente')
+  rejectQuote(@Param('id', ParseIntPipe) id: number, @Req() request: { user: User }) {
+    return this.service.respondToQuote(id, request.user, false);
   }
 
   @Get()
@@ -53,7 +91,7 @@ export class PedidoController {
   @Delete(':id')
   @Roles('admin')
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id', ParseIntPipe) id: number) {
-    return this.service.remove(id);
+  remove(@Param('id', ParseIntPipe) id: number, @Req() request: { user: User }) {
+    return this.service.remove(id, request.user);
   }
 }

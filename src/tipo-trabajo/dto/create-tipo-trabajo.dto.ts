@@ -1,4 +1,4 @@
-import { IsEnum, IsInt, IsNotEmpty, IsNumberString, IsOptional, IsString, MaxLength, Min } from 'class-validator';
+import { IsEnum, IsInt, IsNotEmpty, IsNumberString, IsOptional, IsString, Matches, MaxLength, Min } from 'class-validator';
 
 export enum TipoTrabajoEstado {
   ACTIVO = 'activo',
@@ -18,6 +18,7 @@ export class CreateTipoTrabajoDto {
 
   @IsOptional()
   @IsNumberString()
+  @Matches(/^\d{1,10}(\.\d{1,2})?$/)
   costo?: string;
 
   @IsOptional()

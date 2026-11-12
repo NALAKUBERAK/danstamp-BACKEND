@@ -1,20 +1,26 @@
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   IsEmail,
   IsInt,
   IsNotEmpty,
   IsString,
+  Matches,
   Min,
   MinLength,
 } from 'class-validator';
 
 export class CreateUserDto {
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim().toLowerCase() : value))
   @IsEmail({}, { message: 'El email debe ser válido' })
   @IsNotEmpty({ message: 'El email es obligatorio' })
   email: string;
 
   @IsString({ message: 'La contraseña debe ser una cadena de texto' })
-  @MinLength(6, { message: 'La contraseña debe tener al menos 6 caracteres' })
+  @MinLength(8, { message: 'La contraseña debe tener al menos 8 caracteres' })
+  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,128}$/, {
+    message:
+      'La contraseña debe incluir al menos una mayúscula, una minúscula, un número y un carácter especial',
+  })
   @IsNotEmpty({ message: 'La contraseña es obligatoria' })
   password: string;
 

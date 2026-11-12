@@ -7,6 +7,8 @@ import { UpdateMovimientoInventarioDto } from './dto/update-movimiento-inventari
 import { Producto } from '../producto/entities/producto.entity';
 import { Pedido } from '../pedido/entities/pedido.entity';
 import { User } from '../user/entities/user.entity';
+import { UserService } from '../user/user.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class MovimientoInventarioService {
@@ -17,6 +19,8 @@ export class MovimientoInventarioService {
     private readonly productoRepository: Repository<Producto>,
     @InjectRepository(Pedido)
     private readonly pedidoRepository: Repository<Pedido>,
+    private readonly userService: UserService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   findAll(): Promise<MovimientoInventario[]> {
@@ -24,6 +28,17 @@ export class MovimientoInventarioService {
       relations: { producto: true, usuario: true, pedido: true },
       order: { fecha: 'DESC' },
     });
+  }
+
+  findLowStock(): Promise<Producto[]> {
+    return this.productoRepository
+      .createQueryBuilder('producto')
+      .leftJoinAndSelect('producto.categoria', 'categoria')
+      .where('producto.estado = :active', { active: true })
+      .andWhere('producto.stock_minimo > 0')
+      .andWhere('producto.stock <= producto.stock_minimo')
+      .orderBy('producto.stock', 'ASC')
+      .getMany();
   }
 
   async findOne(id_movimiento: number): Promise<MovimientoInventario> {
@@ -36,54 +51,89 @@ export class MovimientoInventarioService {
   }
 
   async create(dto: CreateMovimientoInventarioDto, usuario: User): Promise<MovimientoInventario> {
-    const producto = await this.productoRepository.findOne({ where: { id_producto: dto.id_producto } });
-    if (!producto) throw new NotFoundException(`Producto con ID ${dto.id_producto} no encontrado`);
+    const result = await this.repository.manager.transaction(async (manager) => {
+      const productoRepository = manager.getRepository(Producto);
+      const pedidoRepository = manager.getRepository(Pedido);
+      const movimientoRepository = manager.getRepository(MovimientoInventario);
 
-    let pedido: Pedido | null = null;
-    if (dto.id_pedido !== undefined) {
-      pedido = await this.pedidoRepository.findOne({ where: { id_pedido: dto.id_pedido } });
-      if (!pedido) throw new NotFoundException(`Pedido con ID ${dto.id_pedido} no encontrado`);
+      const producto = await productoRepository.findOne({
+        where: { id_producto: dto.id_producto },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!producto) throw new NotFoundException(`Producto con ID ${dto.id_producto} no encontrado`);
+
+      if (dto.cantidad <= 0) {
+        throw new BadRequestException('La cantidad del movimiento debe ser mayor que cero');
+      }
+
+      let pedido: Pedido | null = null;
+      if (dto.id_pedido !== undefined) {
+        pedido = await pedidoRepository.findOne({ where: { id_pedido: dto.id_pedido } });
+        if (!pedido) throw new NotFoundException(`Pedido con ID ${dto.id_pedido} no encontrado`);
+      }
+
+      if (dto.tipo === TipoMovimientoInventario.SALIDA && producto.stock < dto.cantidad) {
+        throw new BadRequestException(`Stock insuficiente. Disponible: ${producto.stock}`);
+      }
+
+      const stockBefore = producto.stock;
+      if (dto.tipo === TipoMovimientoInventario.ENTRADA) {
+        producto.stock += dto.cantidad;
+      }
+      if (dto.tipo === TipoMovimientoInventario.SALIDA) {
+        producto.stock -= dto.cantidad;
+      }
+      if (dto.tipo === TipoMovimientoInventario.AJUSTE) {
+        producto.stock = dto.cantidad;
+      }
+
+      await productoRepository.save(producto);
+      const movimiento = movimientoRepository.create({
+        producto,
+        usuario,
+        pedido,
+        tipo: dto.tipo,
+        cantidad: dto.cantidad,
+        observacion: dto.observacion ?? null,
+      });
+      return {
+        movimiento: await movimientoRepository.save(movimiento),
+        stockBefore,
+        stockAfter: producto.stock,
+        stockMinimum: producto.stock_minimo,
+      };
+    });
+    if (
+      result.stockMinimum > 0 &&
+      result.stockBefore > result.stockMinimum &&
+      result.stockAfter <= result.stockMinimum
+    ) {
+      const recipients = await this.userService.findNotificationRecipientsByRole('admin');
+      await Promise.all(recipients.map((recipient) =>
+        this.notificationsService.notifyUser(
+          recipient,
+          'Alerta de inventario bajo',
+          `El producto ${result.movimiento.producto.nombre} tiene ${result.stockAfter} unidades; mínimo configurado: ${result.stockMinimum}.`,
+        ),
+      ));
     }
-
-    if (dto.tipo === TipoMovimientoInventario.SALIDA && producto.stock < dto.cantidad) {
-      throw new BadRequestException(`Stock insuficiente. Disponible: ${producto.stock}`);
-    }
-
-    if (dto.tipo === TipoMovimientoInventario.ENTRADA) producto.stock += dto.cantidad;
-    if (dto.tipo === TipoMovimientoInventario.SALIDA) producto.stock -= dto.cantidad;
-    if (dto.tipo === TipoMovimientoInventario.AJUSTE) producto.stock = dto.cantidad;
-
-    await this.productoRepository.save(producto);
-    const movimiento = this.repository.create({ producto, usuario, pedido, tipo: dto.tipo, cantidad: dto.cantidad, observacion: dto.observacion ?? null });
-    return this.repository.save(movimiento);
+    return result.movimiento;
   }
 
   async update(id_movimiento: number, dto: UpdateMovimientoInventarioDto): Promise<MovimientoInventario> {
     const movimiento = await this.findOne(id_movimiento);
-    const changes = { ...dto };
-
-    if (changes.id_pedido !== undefined) {
-      const pedido = await this.pedidoRepository.findOne({ where: { id_pedido: changes.id_pedido } });
-      if (!pedido) throw new NotFoundException(`Pedido con ID ${changes.id_pedido} no encontrado`);
-      movimiento.pedido = pedido;
-      delete changes.id_pedido;
+    if (
+      movimiento.observacion === 'Salida automática por checkout' ||
+      movimiento.observacion === 'Reintegro automático por cancelación'
+    ) {
+      throw new BadRequestException('Los movimientos asociados a pedidos confirmados son inmutables');
     }
-
-    if (changes.id_producto !== undefined) {
-      const producto = await this.productoRepository.findOne({ where: { id_producto: changes.id_producto } });
-      if (!producto) throw new NotFoundException(`Producto con ID ${changes.id_producto} no encontrado`);
-      movimiento.producto = producto;
-      delete changes.id_producto;
-    }
-
-    delete changes.tipo;
-    delete changes.cantidad;
-    this.repository.merge(movimiento, changes);
+    this.repository.merge(movimiento, dto);
     return this.repository.save(movimiento);
   }
 
   async remove(id_movimiento: number): Promise<void> {
-    const movimiento = await this.findOne(id_movimiento);
-    await this.repository.remove(movimiento);
+    await this.findOne(id_movimiento);
+    throw new BadRequestException('Los movimientos de inventario no se eliminan; registra un ajuste para corregir existencias');
   }
 }

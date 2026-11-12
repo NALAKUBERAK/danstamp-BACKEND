@@ -113,6 +113,25 @@ export class UserService {
     return await this.userRepository.findOne({ where: { id_usuario }, relations: { tipoDocumento: true, role: true } });
   }
 
+  async findNotificationRecipient(id_usuario: number): Promise<User> {
+    const user = await this.userRepository.findOne({
+      where: { id_usuario },
+      select: { id_usuario: true, email: true, telefono: true },
+    });
+    if (!user) throw new NotFoundException(`Usuario con ID ${id_usuario} no encontrado`);
+    return user;
+  }
+
+  findNotificationRecipientsByRole(roleName: string): Promise<User[]> {
+    return this.userRepository
+      .createQueryBuilder('user')
+      .innerJoin('user.role', 'role')
+      .addSelect('user.telefono')
+      .where('role.nombre = :roleName', { roleName })
+      .andWhere('user.isActive = :active', { active: true })
+      .getMany();
+  }
+
   /**
    * Buscar usuario por email
    * Incluye la contraseña (solo para autenticación)
@@ -185,8 +204,17 @@ export class UserService {
     }
 
     if (changes.id_role !== undefined) {
+      if (user.role.nombre !== RoleName.ADMIN) {
+        throw new UnauthorizedException('Solo un administrador puede cambiar roles');
+      }
+
       const role = await this.roleService.findOne(changes.id_role);
       if (!role) throw new NotFoundException('Rol no encontrado');
+
+      if (role.nombre === RoleName.ADMIN && user.role.nombre !== RoleName.ADMIN) {
+        throw new UnauthorizedException('No puedes otorgar permisos de administrador');
+      }
+
       user.role = role;
       delete changes.id_role;
     }
@@ -256,6 +284,7 @@ export class UserService {
    */
   async remove(id: number): Promise<void> {
     const user: User = await this.findOne(id);
-    await this.userRepository.remove(user);
+    user.isActive = false;
+    await this.userRepository.save(user);
   }
 }

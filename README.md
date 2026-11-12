@@ -112,3 +112,52 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 ## License
 
 Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+
+## Danstamp API
+
+The interactive OpenAPI reference is available at `/docs`.
+
+### Main workflows
+
+- Public catalog: `GET /productos`, `GET /productos/catalogo`, `GET /categorias`,
+  `GET /tipo-trabajo`, and `GET /tipos-documento`. The paginated product catalog
+  supports `search`, `categoryId`, `minPrice`, `maxPrice`, `page`, and `limit`.
+- Product images: administrators can submit an `imagen` multipart file (JPG, PNG,
+  or WEBP, up to 5 MB) to `POST /productos` or `PATCH /productos/:id`.
+- Product checkout: authenticated customers submit catalog IDs and quantities to
+  `POST /pedidos/checkout`. Prices are read from the database, stock is locked and
+  decremented in a transaction, and the order total is calculated by the API.
+- Service quotes: customers use `POST /pedidos/cotizaciones`; staff send a quote
+  with `PATCH /pedidos/:id/enviar-cotizacion`; the customer accepts or rejects
+  with `POST /pedidos/:id/aceptar-cotizacion` or
+  `POST /pedidos/:id/rechazar-cotizacion`.
+- Payments are manual transfers/cash/card, not an online payment gateway.
+  `POST /pagos` accepts multipart fields and a required `comprobante` (JPG, PNG,
+  WEBP, or PDF, up to 5 MB). Supported bank methods include Nequi, Daviplata,
+  Bre-B, and Bancolombia. Staff validate or reject through `PATCH /pagos/:id`;
+  validated totals cannot exceed the order total.
+- Admin reports: `/admin/reportes/ventas`, `/admin/reportes/pedidos-por-estado`,
+  `/admin/reportes/productos-mas-vendidos`, and `/admin/reportes/stock-bajo`.
+- Password recovery: request a link with `POST /auth/forgot-password` and set a
+  new password with `POST /auth/reset-password`. The frontend must implement the
+  `/reset-password?token=...` page and call the reset endpoint.
+
+### Configuration and database migration
+
+Copy `.env.example` to `.env` and provide real secrets through the deployment
+environment. Never commit `.env`. Password recovery requires `FRONTEND_URL`,
+`MAIL_HOST`, `MAIL_PORT`, `MAIL_USER`, `MAIL_PASSWORD`, and `MAIL_FROM`.
+
+Email and WhatsApp order notifications are opt-in through
+`NOTIFICATIONS_EMAIL_ENABLED` and `NOTIFICATIONS_WHATSAPP_ENABLED`. WhatsApp
+requires a Meta Cloud API access token, phone-number ID, and the recipient
+country calling code. Provider delivery failures are logged without undoing a
+completed order/payment operation.
+
+Before deploying this version, back up the database and execute
+`migrations/202611120001_security_features.sql` once. It adds password-reset
+storage and payment/order statuses, expands payment methods, and adds the
+Cloudinary public ID for product images. Automatic TypeORM synchronization
+remains disabled.
+
+Run `npm test -- --runInBand` for the unit tests and `npm run build` to compile.

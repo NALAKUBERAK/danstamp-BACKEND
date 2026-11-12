@@ -9,7 +9,26 @@ import { UpdateTipoDocumentoDto } from './dto/update-tipo-documento.dto';
 export class TipoDocumentoService {
   constructor(@InjectRepository(TipoDocumento) private readonly repository: Repository<TipoDocumento>) {}
 
-  findAll(): Promise<TipoDocumento[]> { return this.repository.find(); }
+  findPublic(): Promise<TipoDocumento[]> {
+    return this.repository.find({
+      where: { estado: 'activo' },
+      select: { id_tipo_documento: true, nombre: true },
+      order: { nombre: 'ASC' },
+    });
+  }
+
+  findAll(): Promise<TipoDocumento[]> {
+    return this.repository.find({ order: { nombre: 'ASC' } });
+  }
+
+  async findPublicOne(id_tipo_documento: number): Promise<TipoDocumento> {
+    const item = await this.repository.findOne({
+      where: { id_tipo_documento, estado: 'activo' },
+      select: { id_tipo_documento: true, nombre: true },
+    });
+    if (!item) throw new NotFoundException(`Tipo de documento con ID ${id_tipo_documento} no encontrado`);
+    return item;
+  }
 
   async findOne(id_tipo_documento: number): Promise<TipoDocumento> {
     const item = await this.repository.findOneBy({ id_tipo_documento });

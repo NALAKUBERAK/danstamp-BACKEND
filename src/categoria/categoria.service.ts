@@ -13,13 +13,22 @@ export class CategoriaService {
   ) {}
 
   findAll(): Promise<Categoria[]> {
-    return this.repository.find({ relations: { productos: true }, order: { nombre: 'ASC' } });
+    return this.repository.find({
+      where: { estado: true },
+      order: { nombre: 'ASC' },
+    });
+  }
+
+  findAllForAdmin(): Promise<Categoria[]> {
+    return this.repository.find({
+      relations: { productos: true },
+      order: { nombre: 'ASC' },
+    });
   }
 
   async findOne(id_categoria: number): Promise<Categoria> {
     const categoria = await this.repository.findOne({
-      where: { id_categoria },
-      relations: { productos: true },
+      where: { id_categoria, estado: true },
     });
     if (!categoria) throw new NotFoundException(`Categoría con ID ${id_categoria} no encontrada`);
     return categoria;
@@ -38,7 +47,7 @@ export class CategoriaService {
   }
 
   async update(id_categoria: number, dto: UpdateCategoriaDto): Promise<Categoria> {
-    const categoria = await this.findOne(id_categoria);
+    const categoria = await this.findOneForAdmin(id_categoria);
 
     if (dto.nombre !== undefined && dto.nombre !== categoria.nombre) {
       const exists = await this.repository.existsBy({ nombre: dto.nombre });
@@ -50,7 +59,15 @@ export class CategoriaService {
   }
 
   async remove(id_categoria: number): Promise<void> {
-    const categoria = await this.findOne(id_categoria);
+    const categoria = await this.findOneForAdmin(id_categoria);
     await this.repository.remove(categoria);
+  }
+
+  private async findOneForAdmin(id_categoria: number): Promise<Categoria> {
+    const categoria = await this.repository.findOne({
+      where: { id_categoria },
+    });
+    if (!categoria) throw new NotFoundException(`Categoría con ID ${id_categoria} no encontrada`);
+    return categoria;
   }
 }

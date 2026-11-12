@@ -27,6 +27,7 @@ export class DetallePedidoController {
   constructor(private readonly service: DetallePedidoService) {}
 
   @Post()
+  @Roles('admin', 'empleado')
   create(@Body() dto: CreateDetallePedidoDto, @Req() request: { user: User }) {
     return this.service.create(dto, request.user);
   }

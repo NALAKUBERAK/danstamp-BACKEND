@@ -49,6 +49,9 @@ export class Producto {
   @Column({ type: 'varchar', length: 255, nullable: true })
   imagen_url: string | null;
 
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  imagen_public_id: string | null;
+
   @Column({ type: 'tinyint', default: 1 })
   estado: boolean;
 

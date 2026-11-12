@@ -6,9 +6,14 @@ import { Pedido } from '../pedido/entities/pedido.entity';
 import { MovimientoInventarioService } from './movimiento-inventario.service';
 import { MovimientoInventarioController } from './movimiento-inventario.controller';
 import { UserModule } from '../user/user.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([MovimientoInventario, Producto, Pedido]), UserModule],
+  imports: [
+    TypeOrmModule.forFeature([MovimientoInventario, Producto, Pedido]),
+    UserModule,
+    NotificationsModule,
+  ],
   controllers: [MovimientoInventarioController],
   providers: [MovimientoInventarioService],
   exports: [MovimientoInventarioService],

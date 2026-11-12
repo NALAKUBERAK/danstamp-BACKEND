@@ -19,35 +19,42 @@ import { CreateTipoTrabajoDto } from './dto/create-tipo-trabajo.dto';
 import { UpdateTipoTrabajoDto } from './dto/update-tipo-trabajo.dto';
 
 @Controller('tipo-trabajo')
-@UseGuards(JwtAuthGuard, RolesGuard)
 export class TipoTrabajoController {
   constructor(private readonly service: TipoTrabajoService) {}
 
   @Get()
-  @Roles('admin', 'empleado', 'cliente')
   findAll() {
     return this.service.findAll();
   }
 
+  @Get('admin')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  findAllForAdmin() {
+    return this.service.findAllForAdmin();
+  }
+
   @Get(':id')
-  @Roles('admin', 'empleado', 'cliente')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.service.findOne(id);
   }
 
   @Post()
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   create(@Body() dto: CreateTipoTrabajoDto) {
     return this.service.create(dto);
   }
 
   @Patch(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateTipoTrabajoDto) {
     return this.service.update(id, dto);
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id', ParseIntPipe) id: number) {

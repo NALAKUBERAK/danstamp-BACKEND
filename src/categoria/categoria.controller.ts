@@ -19,7 +19,6 @@ import { CreateCategoriaDto } from './dto/create-categoria.dto';
 import { UpdateCategoriaDto } from './dto/update-categoria.dto';
 
 @Controller('categorias')
-@UseGuards(JwtAuthGuard, RolesGuard)
 export class CategoriaController {
   constructor(private readonly service: CategoriaService) {}
 
@@ -29,6 +28,13 @@ export class CategoriaController {
     return this.service.findAll();
   }
 
+  @Get('admin')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  findAllForAdmin() {
+    return this.service.findAllForAdmin();
+  }
+
   @Get(':id')
   @Roles('admin', 'empleado', 'cliente')
   findOne(@Param('id', ParseIntPipe) id: number) {
@@ -36,18 +42,21 @@ export class CategoriaController {
   }
 
   @Post()
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   create(@Body() dto: CreateCategoriaDto) {
     return this.service.create(dto);
   }
 
   @Patch(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateCategoriaDto) {
     return this.service.update(id, dto);
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id', ParseIntPipe) id: number) {
